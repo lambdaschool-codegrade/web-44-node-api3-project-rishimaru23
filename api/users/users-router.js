@@ -5,7 +5,7 @@ const { logger, validatePost , validateUserId, validateUser } = require('../midd
 // The middleware functions also need to be required
 const Users = require('./users-model')
 const Posts = require('../posts/posts-model');
-const dbConfig = require('../../data/db-config');
+// const dbConfig = require('../../data/db-config');
 
 const router = express.Router();
 router.use(logger)
@@ -60,15 +60,36 @@ router.delete('/:id', validateUserId, async (req, res, next) => {
   }
 });
 
-router.get('/:id/posts', (req, res) => {
+router.get('/:id/posts',validateUserId, async (req, res, next) => {
   // RETURN THE ARRAY OF USER POSTS
   // this needs a middleware to verify user id
+  try {
+    const posts = await Users.getUserPosts(req.params.id)
+      if(posts.length === 0) {
+        res.status(404).json({
+          message: "This user has no posts"
+        })
+      } else {
+        res.status(200).json(posts)
+      }
+  } catch (err){
+    next(err)
+  }
 });
 
-router.post('/:id/posts', (req, res) => {
+router.post('/:id/posts', validateUserId, validatePost, async  (req, res, next) => {
   // RETURN THE NEWLY CREATED USER POST
   // this needs a middleware to verify user id
   // and another middleware to check that the request body is valid
+  try {
+    const newPost = await Posts.insert({
+      user_id: req.params.id,
+      text: req.text
+      })
+      res.status(201).json(newPost)
+  } catch(err){
+    next(err)
+  }
 });
 
 
